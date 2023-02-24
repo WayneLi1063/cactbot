@@ -541,53 +541,71 @@ const triggerSet: TriggerSet<Data> = {
       type: 'HeadMarker',
       netRegex: {},
       condition: (data, matches) => getHeadmarkerId(data, matches) === headmarkers.stack,
-      response: (data, matches, output) => {
-        // cactbot-builtin-response
-        output.responseOutputStrings = {
-          midGlitch: {
-            en: 'Mid',
-            de: 'Mittel',
-            ko: '가까이',
-          },
-          remoteGlitch: {
-            en: 'Far',
-            de: 'Fern',
-            ko: '멀리',
-          },
-          stacksOn: {
-            en: '${glitch} Stacks (${player1}, ${player2})',
-            de: '${glitch} Sammeln (${player1}, ${player2})',
-            ko: '${glitch} 쉐어 (${player1}, ${player2})',
-          },
-          // TODO: say who your tether partner is to swap??
-          // TODO: tell the tether partner they are tethered to a stack?
-          stackOnYou: Outputs.stackOnYou,
-          unknown: Outputs.unknown,
-        };
-
+      infoText: (data, matches, output) => {
         data.spotlightStacks.push(matches.target);
         const [p1, p2] = data.spotlightStacks.sort();
-        if (data.spotlightStacks.length !== 2 || p1 === undefined || p2 === undefined)
-          return;
-
-        const glitch = data.glitch
-          ? {
-            mid: output.midGlitch!(),
-            remote: output.remoteGlitch!(),
-          }[data.glitch]
-          : output.unknown!();
-
-        const stacksOn = output.stacksOn!({
-          glitch: glitch,
-          player1: data.ShortName(p1),
-          player2: data.ShortName(p2),
-        });
-        if (!data.spotlightStacks.includes(data.me))
-          return { infoText: stacksOn };
-        return {
-          alertText: output.stackOnYou!(),
-          infoText: stacksOn,
-        };
+        if (data.spotlightStacks.length !== 2 || p1 === undefined || p2 === undefined) return;
+        const glitch = data.glitch ? {
+          mid: output.midGlitch!(),
+          remote: output.remoteGlitch!()
+        }[data.glitch] : output.unknown!();
+        const symbol1 = data.synergyMarker[p1];
+        const symbol2 = data.synergyMarker[p2];
+        if (data.glitch === "mid") {
+          if (symbol1 === 'cross') {
+            return output.midStacksCheckSymbol2!({ glitch: glitch, symbol2 : symbol2 });
+          } else if (symbol2 === 'cross') {
+            return output.midStacksCheckSymbol1!({ glitch: glitch, symbol1 : symbol1 });
+          } else if (symbol1 === 'triangle') {
+            return output.midStacksCheckSymbol1!({ glitch: glitch, symbol1 : symbol1 });
+          } else if (symbol2 === 'triangle') {
+            return output.midStacksCheckSymbol2!({ glitch: glitch, symbol2 : symbol2 });
+          } else if (symbol1 === 'circle') {
+            return output.midStacksCheckSymbol1!({ glitch: glitch, symbol1 : symbol1 });
+          } else {
+            return output.midStacksCheckSymbol2!({ glitch: glitch, symbol2 : symbol2 });
+          }
+        } else {
+          if (symbol1 === 'cross') {
+            return output.remoteStacksOnReversed!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          } else if (symbol2 === 'cross') {
+            return output.remoteStacksOn!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          } else if (symbol1 === 'triangle') {
+            return output.remoteStacksOn!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          } else if (symbol2 === 'triangle') {
+            return output.remoteStacksOnReversed!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          } else if (symbol1 === 'circle') {
+            return output.remoteStacksOn!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          } else {
+            return output.remoteStacksOn!({ glitch: glitch, symbol1 : symbol1, symbol2 : symbol2 });
+          }
+        }
+      }, 
+      outputStrings: {
+        // assuming PF strat BPOG - GPOB, southmost swap
+        midGlitch: {
+          en: 'Mid',
+          de: 'Mittel',
+          ko: '가까이'
+        },
+        remoteGlitch: {
+          en: 'Far',
+          de: 'Fern',
+          ko: '멀리'
+        },
+        midStacksCheckSymbol1: {
+          en: '${glitch}, check ${symbol1}',
+        },
+        midStacksCheckSymbol2: {
+          en: '${glitch}, check ${symbol2}',
+        },
+        remoteStacksOn: {
+          en: '${glitch} 1 ${symbol1} 2 ${symbol2}',
+        },
+        remoteStacksOnReversed: {
+          en: '${glitch} 1 ${symbol2} 2 ${symbol1}',
+        },
+        unknown: Outputs.unknown
       },
     },
     {
